@@ -1,24 +1,3 @@
-
-Cloud
-/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Create github issues · SH
 #!/usr/bin/env bash
 # Bulk-create the Flight Demand NI backlog as GitHub Issues + labels.
 #
