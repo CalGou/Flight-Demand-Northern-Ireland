@@ -10,11 +10,10 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 - [x] Document known anomalies/gaps — see `docs/data-audit-findings.md` (no bulk time-series file; 2001 methodology break is pre-2015 and moot; fortnightly publish lag)
 - [x] Record the audit's finalised start date and findings back into the project parameters doc (§3/§12) — done
 
-Next up: run `src/ingest_caa_data.py` for real (needs to run somewhere with network access to caa.co.uk) and start Epic 2.
-
 ## Epic 2: Cleaning & EDA
 
-- [ ] Build ingestion script: raw CAA files → tidy monthly panel (airport × month)
+- [x] Build ingestion script: raw CAA files → tidy monthly panel (airport × month) — `ingest_caa_data.py` + `build_panel.py`. Fully clean as of 26 Aug 2026: 414 rows, 138 months × 3 airports, zero missing passenger/movement data, zero malformed periods (see `docs/data-audit-findings.md` for the two schema bugs that were fixed along the way)
+- [ ] Normalise the movement columns' casing across the Apr-2016 CAA schema change (e.g. `mov_total_EU_atm` / `mov_Total_EU_ATM` are the same metric)
 - [ ] Handle missing/suppressed values, with the treatment documented
 - [ ] Flag the COVID-era anomaly period as an explicit feature/exclusion flag
 - [ ] EDA: seasonality, trend, and airport-to-airport comparison
