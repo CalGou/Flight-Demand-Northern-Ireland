@@ -133,12 +133,6 @@ def xgb_forecast(train_df, test_periods):
     values = train_df["total_pax"].values
     lookup = dict(zip(periods, values))
 
-    # Build a direct-forecasting training set: slide a synthetic origin
-    # across the airport's own training history, and for each one, create
-    # one training example per horizon step (1-6) predicting that many
-    # months ahead. This mirrors exactly what happens at the real origin
-    # at the end, so every example -- training and test -- is built the
-    # same leak-free way.
     X_train, y_train = [], []
     for origin_idx in range(len(values)):
         for horizon_step in range(1, 7):
@@ -146,25 +140,45 @@ def xgb_forecast(train_df, test_periods):
             if target_idx >= len(values):
                 break
             row = _make_feature_row(lookup, values, origin_idx, periods[target_idx], horizon_step)
-            if row is None:
+            if row is None or row["same_month_last_year"] == 0:
+                # A zero base (BFS Apr/May 2020) makes the growth ratio
+                # undefined -- skip rather than divide by zero.
                 continue
+            # Predict growth relative to the same month last year, not the
+            # raw passenger count. A tree-based model can't extrapolate
+            # past the range of values it was trained on, and BFS in
+            # particular keeps setting new all-time highs post-COVID. A
+            # year-over-year growth ratio stays in a roughly stable range
+            # even while the underlying level keeps climbing, so the model
+            # only ever has to learn "stronger or weaker than a year ago"
+            # -- something it can express regardless of the absolute level.
+            growth = (values[target_idx] - row["same_month_last_year"]) / row["same_month_last_year"]
             X_train.append(row)
-            y_train.append(values[target_idx])
+            y_train.append(growth)
 
     X_train = pd.DataFrame(X_train, columns=FEATURE_COLS)
     model = XGBRegressor(n_estimators=200, max_depth=3, learning_rate=0.05)
     model.fit(X_train, y_train)
 
-    # Real forecast: anchor at the true origin (the last row of train_df)
-    # and predict each period in test_periods directly.
     origin_idx = len(values) - 1
-    X_test = []
+    X_test, baselines = [], []
     for horizon_step, target_period in enumerate(test_periods, start=1):
         row = _make_feature_row(lookup, values, origin_idx, target_period, horizon_step)
-        X_test.append(row if row is not None else {c: np.nan for c in FEATURE_COLS})
+        if row is None:
+            X_test.append({c: np.nan for c in FEATURE_COLS})
+            baselines.append(values[origin_idx])
+        else:
+            X_test.append(row)
+            baselines.append(row["same_month_last_year"])
     X_test = pd.DataFrame(X_test, columns=FEATURE_COLS)
 
-    return model.predict(X_test)
+    predicted_growth = model.predict(X_test)
+    baselines = np.array(baselines)
+    reconstructed = baselines * (1 + predicted_growth)
+    # Zero-baseline fold (test period one year after BFS's Apr/May 2020
+    # zeros): baseline * anything is degenerate, fall back to the last
+    # known level instead.
+    return np.where(baselines != 0, reconstructed, values[origin_idx])
 
 if __name__ == "__main__":
     def naive_forecast(train_df, test_periods):
@@ -198,13 +212,3 @@ if __name__ == "__main__":
         clean = scores[~scores["train_end"].isin(covid_folds)]
         print(f"\n{name} (excluding COVID-overlapping folds):")
         print(clean.groupby("airport_code")[["mae", "rmse", "mape"]].mean().to_string())
-
-# One implementation detail worth knowing for the write-up, 
-# since you'll get asked about it if this goes in a portfolio: 
-# for folds whose training window includes Apr/May 2020 
-# (which is most folds from mid-2020 onward, 
-# since your training window is cumulative from Jan 2015), 
-# the multiplicative-seasonal fit fails on those zero values and silently falls back to additive seasonal,
-# per the try/except in ets_forecast. That's expected, not a bug
-# — but worth a one-line note in the findings doc so it's not a mystery later if someone inspects the model params per fold.
-

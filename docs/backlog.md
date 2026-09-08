@@ -27,12 +27,12 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 - [x] SARIMA/ETS (or Prophet) model per airport — ETS (`statsmodels.ExponentialSmoothing`), fit per fold per airport with trend + seasonal components; SARIMA not pursued separately since ETS gave a clean win everywhere
 - [x] Compare baseline vs statistical models on MAE/RMSE/MAPE — ETS beats the strongest per-airport baseline on every metric, COVID folds excluded: BFS MAE -37.5%, BHD -43.6%, LDY -16.0% (see `docs/baseline-evaluation-findings.md`)
 
-## Epic 4: ML Models
+## Epic 4: ML Models ✅
 
 - [x] Feature engineering: lag features, rolling windows, calendar/seasonal features — `src/features.py`, verified NaN counts match expected lookback windows exactly. Also uncovered that the row-relative lag/rolling columns aren't leak-safe across the harness's 6-month horizon (see `docs/ml-model-findings.md`), which shaped the XGBoost feature design
-- [ ] XGBoost/LightGBM model per airport
-- [ ] Full model comparison table — baseline vs statistical vs ML
-- [ ] (Stretch) LSTM/temporal model, if data volume justifies it
+- [x] XGBoost/LightGBM model per airport — `xgb_forecast` in `src/evaluation.py`, direct multi-step (single model, horizon as a feature). Underperforms ETS at every airport; diagnosed as a trend-extrapolation limitation of tree-based models, attempted a growth-ratio retarget to fix it which didn't close the gap (see `docs/ml-model-findings.md`) — documented as an instructive negative result rather than pursued further given the data volume (~130 months/airport) likely favours a well-specified classical model over a general-purpose ML one here
+- [x] Full model comparison table — baseline vs statistical vs ML — see `docs/ml-model-findings.md`: ETS beats naive/seasonal-naive/XGBoost at every airport on every metric (COVID-excluded); reported as this project's best per-airport forecaster
+- [ ] (Stretch) LSTM/temporal model, if data volume justifies it — **not pursued**: LDY in particular has ~130 monthly observations, well short of what a deep model needs, and XGBoost's underperformance here (see above) is itself evidence more model capacity isn't the bottleneck for this dataset
 
 ## Epic 5: Write-up & Dashboard
 
