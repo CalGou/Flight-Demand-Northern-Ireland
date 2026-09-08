@@ -4,7 +4,9 @@ matplotlib
 numpy
 openpyxl
 pandas
+plotly
 requests
 scikit-learn
 statsmodels
+streamlit
 xgboost
