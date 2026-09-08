@@ -2,6 +2,7 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/monthly_panel_clean.csv
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
