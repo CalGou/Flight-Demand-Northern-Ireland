@@ -37,7 +37,7 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 ## Epic 5: Write-up & Dashboard
 
 - [x] Write the README: methodology, findings, model comparison, in plain language — top-level `README.md` rewritten: key findings, methodology, results table, links into `docs/` for full detail, run instructions
-- [ ] Produce final forecast outputs and charts per airport
+- [x] Produce final forecast outputs and charts per airport — `src/forecast.py`: ETS refit on full history (not a backtest fold) per airport, 12-month-ahead forecast. `reports/{bfs,bhd,ldy}_forecast.{png,csv}`. Visually confirmed: seasonal shape and trend continue smoothly past the actual data with no flattening (unlike XGBoost's extrapolation ceiling), and the 2026-2027 winter trough / summer peak line up with each airport's historical calendar-month pattern
 - [ ] (Optional) Build a Streamlit dashboard over the historical + forecast data
 
 ## Epic 6: Portfolio Polish
