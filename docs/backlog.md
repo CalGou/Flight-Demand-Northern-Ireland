@@ -42,6 +42,6 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 
 ## Epic 6: Portfolio Polish
 
-- [ ] Clean up the repo for public visibility (licence, pinned dependencies, clear run instructions)
+- [x] Clean up the repo for public visibility (licence, pinned dependencies, clear run instructions) — MIT `LICENSE` added (data separately noted as UK CAA OGL, not MIT); `requirements.txt` pinned to tested versions and trimmed of two unused packages (scikit-learn, openpyxl -- never actually imported); README run instructions cover the full pipeline through the dashboard. Also fixed a broken reference found during proofread: the EDA notebook was saved as `01_ada.ipynb` (typo) while every doc pointed at `01_eda.ipynb` -- renamed to match. Live dashboard deployed and linked: https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/
 - [ ] Final proofread of the write-up
 - [ ] Link the finished project from CV / portfolio site
