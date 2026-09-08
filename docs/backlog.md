@@ -20,12 +20,12 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 - [x] EDA: pre/post-COVID recovery pattern — recovery-vs-2019-baseline plot shows all three airports back above 100 by 2022 and growing past pre-pandemic levels since (BFS peaking ~134-136%)
 - [ ] (If pursued) Source and merge supplementary features — economic, tourism, or weather data
 
-## Epic 3: Baseline & Statistical Models
+## Epic 3: Baseline & Statistical Models ✅
 
 - [x] Build the evaluation harness: time-based train/test split + walk-forward (rolling-origin) validation — `src/evaluation.py`, `make_folds()`: expanding training window, 6-month horizon, 6-month step, 36-month minimum training window (17 folds over the full panel)
 - [x] Naive and seasonal-naive baseline models — see `docs/baseline-evaluation-findings.md` for full results. No single winner: seasonal-naive clearly beats naive at BFS, they're roughly tied at BHD, naive wins at LDY — decision is to use per-airport baselines rather than one blanket choice
-- [ ] SARIMA/ETS (or Prophet) model per airport
-- [ ] Compare baseline vs statistical models on MAE/RMSE/MAPE
+- [x] SARIMA/ETS (or Prophet) model per airport — ETS (`statsmodels.ExponentialSmoothing`), fit per fold per airport with trend + seasonal components; SARIMA not pursued separately since ETS gave a clean win everywhere
+- [x] Compare baseline vs statistical models on MAE/RMSE/MAPE — ETS beats the strongest per-airport baseline on every metric, COVID folds excluded: BFS MAE -37.5%, BHD -43.6%, LDY -16.0% (see `docs/baseline-evaluation-findings.md`)
 
 ## Epic 4: ML Models
 

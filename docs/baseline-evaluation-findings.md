@@ -1,6 +1,6 @@
-# Baseline Evaluation Findings
+# Baseline & Statistical Model Evaluation Findings
 
-Covers Epic 3 tickets: the walk-forward evaluation harness and the naive / seasonal-naive baseline comparison.
+Covers Epic 3: the walk-forward evaluation harness, the naive / seasonal-naive baseline comparison, and the ETS statistical model comparison against those baselines.
 
 ## Methodology
 
@@ -58,9 +58,47 @@ The expectation going in was that seasonal-naive would beat plain naive across t
 
 **Conclusion**: there isn't a single baseline that's "best" across all three airports — traffic mix (seasonal/leisure vs. business vs. low-volume/noisy) affects which naive variant wins, and that's worth stating explicitly in the write-up rather than picking one baseline for all three.
 
-**Decision for Epic 3 going forward**: report per-airport baselines — seasonal-naive as the bar to beat at BFS, naive as the bar to beat at BHD and LDY — rather than a single blanket baseline. The upcoming SARIMA/ETS models should be compared against each airport's own stronger baseline.
+**Decision for Epic 3 going forward**: report per-airport baselines — seasonal-naive as the bar to beat at BFS, naive as the bar to beat at BHD and LDY — rather than a single blanket baseline. The ETS statistical model below is compared against each airport's own stronger baseline.
+
+## Statistical model: ETS
+
+`ExponentialSmoothing` (statsmodels), fit independently per fold per airport rather than looked up like the baselines — jointly models level, trend, and seasonal components, updated with exponential weighting so recent observations matter more.
+
+- `trend="add"`, `seasonal_periods=12`.
+- Seasonality is fit as `seasonal="mul"` where possible (BFS's swing is proportional to its current level, not a fixed amount — see the Epic 2 EDA calendar-month plots), falling back to `seasonal="add"` when the training window contains a zero value. This matters in practice: BFS's genuine zero-passenger months (Apr/May 2020) sit permanently in the cumulative training window for every fold from mid-2020 onward, since the harness trains on all history up to `train_end`. So most later folds use the additive fallback, not multiplicative — expected behaviour, not a bug.
+
+### Results: full data (all 17 folds, including COVID-disrupted folds)
+
+| Airport | MAE | RMSE | MAPE |
+|---|---|---|---|
+| BFS | 90,868.43 | 104,082.62 | 122.35% |
+| BHD | 22,875.50 | 26,602.52 | 155.65% |
+| LDY | 2,652.85 | 3,090.69 | 160.40% |
+
+ETS beats naive on MAE/RMSE for all three airports here, but its MAPE is worse than naive's. That's not evidence ETS is a worse model — MAPE is an unweighted mean across folds, so the handful of COVID-trough folds (near-zero actuals produce enormous percentage errors, e.g. seasonal-naive's worst fold hit 2,490% MAPE at BHD for `train_end=201912`) dominate the average regardless of how good absolute-error performance is elsewhere. This is exactly why the COVID-excluded comparison below is the one that matters, not the full-data numbers.
+
+### Results: COVID-excluded (12 folds)
+
+| Airport | MAE | RMSE | MAPE |
+|---|---|---|---|
+| BFS | 32,946.65 | 38,495.99 | 6.89% |
+| BHD | 11,436.26 | 13,762.91 | 6.13% |
+| LDY | 1,784.05 | 2,145.52 | 12.09% |
+
+### Analysis
+
+ETS beats whichever baseline was strongest at each airport, on every metric, with no mixed result to explain away:
+
+| Airport | Best baseline (MAE / MAPE) | ETS (MAE / MAPE) | MAE improvement |
+|---|---|---|---|
+| BFS | seasonal-naive: 52,751.72 / 10.35% | 32,946.65 / 6.89% | −37.5% |
+| BHD | naive: 20,293.47 / 10.57% | 11,436.26 / 6.13% | −43.6% |
+| LDY | naive: 2,122.32 / 13.69% | 1,784.05 / 12.09% | −16.0% |
+
+The gain is largest at BFS and BHD and smaller at LDY, which is consistent with the Epic 2 EDA: ETS can only extract more signal than a naive lookup where there's trend/seasonal structure to model in the first place. LDY's calendar-month averages are nearly flat, so even a properly-fit model is mostly tracking noise there — real improvement, but a much smaller one.
+
+**Conclusion**: ETS is the model to report as beating the per-airport baseline bar across all three airports. Satisfies Epic 3's "SARIMA/ETS (or Prophet) model per airport" and "compare baseline vs statistical models" tickets — SARIMA wasn't pursued separately since ETS already gave a clean, unambiguous win everywhere.
 
 ## Open items
 
-- Confirm the duplicate-print indentation fix in `src/evaluation.py` (the `scores = evaluate_forecaster(...)` / print block was originally inside the `for name, fn in [...]` loop, printing the same worst-10-folds table twice).
-- Epic 2's EDA plots (trend, seasonality, airport share, COVID recovery) were reported done but not yet reviewed together — worth a quick look to visually confirm the "BFS is more seasonal than BHD/LDY" explanation above before treating Epic 2 as fully closed.
+- None outstanding — the duplicate-print fix and Epic 2 EDA plot review are both confirmed done (see `docs/backlog.md`).
