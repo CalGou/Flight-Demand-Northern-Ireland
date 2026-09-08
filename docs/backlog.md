@@ -29,7 +29,7 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 
 ## Epic 4: ML Models
 
-- [ ] Feature engineering: lag features, rolling windows, calendar/seasonal features
+- [x] Feature engineering: lag features, rolling windows, calendar/seasonal features — `src/features.py`, verified NaN counts match expected lookback windows exactly. Also uncovered that the row-relative lag/rolling columns aren't leak-safe across the harness's 6-month horizon (see `docs/ml-model-findings.md`), which shaped the XGBoost feature design
 - [ ] XGBoost/LightGBM model per airport
 - [ ] Full model comparison table — baseline vs statistical vs ML
 - [ ] (Stretch) LSTM/temporal model, if data volume justifies it
