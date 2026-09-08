@@ -34,11 +34,11 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 - [x] Full model comparison table — baseline vs statistical vs ML — see `docs/ml-model-findings.md`: ETS beats naive/seasonal-naive/XGBoost at every airport on every metric (COVID-excluded); reported as this project's best per-airport forecaster
 - [ ] (Stretch) LSTM/temporal model, if data volume justifies it — **not pursued**: LDY in particular has ~130 monthly observations, well short of what a deep model needs, and XGBoost's underperformance here (see above) is itself evidence more model capacity isn't the bottleneck for this dataset
 
-## Epic 5: Write-up & Dashboard
+## Epic 5: Write-up & Dashboard ✅
 
 - [x] Write the README: methodology, findings, model comparison, in plain language — top-level `README.md` rewritten: key findings, methodology, results table, links into `docs/` for full detail, run instructions
 - [x] Produce final forecast outputs and charts per airport — `src/forecast.py`: ETS refit on full history (not a backtest fold) per airport, 12-month-ahead forecast. `reports/{bfs,bhd,ldy}_forecast.{png,csv}`. Visually confirmed: seasonal shape and trend continue smoothly past the actual data with no flattening (unlike XGBoost's extrapolation ceiling), and the 2026-2027 winter trough / summer peak line up with each airport's historical calendar-month pattern
-- [ ] (Optional) Build a Streamlit dashboard over the historical + forecast data
+- [x] (Optional) Build a Streamlit dashboard over the historical + forecast data — `app.py`: KPI row, actual/forecast chart, model evaluation table. Built and pushed; not yet run locally to visually confirm (unlike the forecast charts, which were screenshot-checked) -- worth a quick `streamlit run app.py` when convenient
 
 ## Epic 6: Portfolio Polish
 
