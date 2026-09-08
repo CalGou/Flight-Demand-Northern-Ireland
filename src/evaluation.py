@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from xgboost import XGBRegressor
 
 @dataclass
 class Fold:
@@ -101,6 +102,70 @@ def evaluate_forecaster(df, forecast_fn, folds, airport_codes, target_col="total
             })
     return pd.DataFrame(rows)
 
+FEATURE_COLS = ["level", "roll3_mean", "roll6_mean", "same_month_last_year", "horizon", "month_sin", "month_cos"]
+
+
+def _make_feature_row(lookup, values, origin_idx, target_period, horizon_step):
+    """Build one feature row for forecasting `target_period`, which is
+    `horizon_step` months ahead of `origin_idx`. Every input here comes
+    from `values` at or before origin_idx, or from the target month's own
+    calendar position -- never from the target's actual passenger count."""
+    year, month = int(target_period[:4]), int(target_period[4:6])
+    same_month_last_year_period = f"{year - 1}{target_period[4:6]}"
+    same_month_last_year = lookup.get(same_month_last_year_period)
+    if same_month_last_year is None:
+        return None
+
+    return {
+        "level": values[origin_idx],
+        "roll3_mean": values[max(0, origin_idx - 2): origin_idx + 1].mean(),
+        "roll6_mean": values[max(0, origin_idx - 5): origin_idx + 1].mean(),
+        "same_month_last_year": same_month_last_year,
+        "horizon": horizon_step,
+        "month_sin": np.sin(2 * np.pi * month / 12),
+        "month_cos": np.cos(2 * np.pi * month / 12),
+    }
+
+
+def xgb_forecast(train_df, test_periods):
+    train_df = train_df.sort_values("period").reset_index(drop=True)
+    periods = train_df["period"].tolist()
+    values = train_df["total_pax"].values
+    lookup = dict(zip(periods, values))
+
+    # Build a direct-forecasting training set: slide a synthetic origin
+    # across the airport's own training history, and for each one, create
+    # one training example per horizon step (1-6) predicting that many
+    # months ahead. This mirrors exactly what happens at the real origin
+    # at the end, so every example -- training and test -- is built the
+    # same leak-free way.
+    X_train, y_train = [], []
+    for origin_idx in range(len(values)):
+        for horizon_step in range(1, 7):
+            target_idx = origin_idx + horizon_step
+            if target_idx >= len(values):
+                break
+            row = _make_feature_row(lookup, values, origin_idx, periods[target_idx], horizon_step)
+            if row is None:
+                continue
+            X_train.append(row)
+            y_train.append(values[target_idx])
+
+    X_train = pd.DataFrame(X_train, columns=FEATURE_COLS)
+    model = XGBRegressor(n_estimators=200, max_depth=3, learning_rate=0.05)
+    model.fit(X_train, y_train)
+
+    # Real forecast: anchor at the true origin (the last row of train_df)
+    # and predict each period in test_periods directly.
+    origin_idx = len(values) - 1
+    X_test = []
+    for horizon_step, target_period in enumerate(test_periods, start=1):
+        row = _make_feature_row(lookup, values, origin_idx, target_period, horizon_step)
+        X_test.append(row if row is not None else {c: np.nan for c in FEATURE_COLS})
+    X_test = pd.DataFrame(X_test, columns=FEATURE_COLS)
+
+    return model.predict(X_test)
+
 if __name__ == "__main__":
     def naive_forecast(train_df, test_periods):
         last_value = train_df["total_pax"].iloc[-1]
@@ -119,7 +184,7 @@ if __name__ == "__main__":
     periods = sorted(df["period"].unique())
     covid_folds = {"201912", "202006", "202012", "202106", "202112"}
 
-    for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast), ("ets", ets_forecast)]:
+    for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast), ("ets", ets_forecast), ("xgb", xgb_forecast)]:
         scores = evaluate_forecaster(df, fn, make_folds(periods), ["BFS", "BHD", "LDY"])
         print(f"\n{name}:")
         print(scores.groupby("airport_code")[["mae", "rmse", "mape"]].mean().to_string())
@@ -128,7 +193,7 @@ if __name__ == "__main__":
     scores_sn = evaluate_forecaster(df, seasonal_naive_forecast, make_folds(periods), ["BFS", "BHD", "LDY"])
     print(scores_sn.sort_values("mape", ascending=False).head(10).to_string())
 
-    for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast), ("ets", ets_forecast)]:
+    for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast), ("ets", ets_forecast), ("xgb", xgb_forecast)]:
         scores = evaluate_forecaster(df, fn, make_folds(periods), ["BFS", "BHD", "LDY"])
         clean = scores[~scores["train_end"].isin(covid_folds)]
         print(f"\n{name} (excluding COVID-overlapping folds):")
@@ -142,3 +207,4 @@ if __name__ == "__main__":
 # the multiplicative-seasonal fit fails on those zero values and silently falls back to additive seasonal,
 # per the try/except in ets_forecast. That's expected, not a bug
 # — but worth a one-line note in the findings doc so it's not a mystery later if someone inspects the model params per fold.
+

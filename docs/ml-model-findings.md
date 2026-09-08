@@ -29,6 +29,22 @@ Went with direct. Rather than training six separate per-step models, `xgb_foreca
 
 Trade-off worth being upfront about: this sacrifices the shorter, more-recent-history features (`lag1`, `lag3`, `roll3`) that `features.py` computed, since those aren't valid across the full horizon. The model has less to work with for near-term steps than a genuinely one-step-ahead model would.
 
-## Results
+## Results: v1 (raw passenger count as the target)
 
-_To be added once `xgb_forecast` has been run through the evaluation harness._
+COVID-excluded, alongside the Epic 3 baselines and ETS for comparison:
+
+| Airport | naive MAE | seasonal_naive MAE | ets MAE | xgb v1 MAE |
+|---|---|---|---|---|
+| BFS | 92,088.76 | 52,751.72 | **32,946.65** | 65,655.08 |
+| BHD | 20,293.47 | 20,441.81 | **11,436.26** | 14,718.48 |
+| LDY | 2,122.32 | 2,845.85 | **1,784.05** | 2,966.12 |
+
+Not a clean win, unlike ETS. At BHD, xgb clearly beats both baselines (just not ETS). At BFS it beats naive but loses to the simpler seasonal-naive baseline. At LDY it's the worst of all four models, including naive.
+
+**Diagnosis**: gradient-boosted trees predict a constant value per leaf, learned from the training targets they saw — they structurally cannot predict a value outside the range of `total_pax` seen during training. BFS's recovery has pushed traffic 20-36% above its 2019 baseline by 2024-2026 (see the Epic 2 recovery-vs-baseline plot), meaning later folds' test periods are new all-time highs the model was never trained on a value that large — it can't extrapolate up to meet them, so it systematically undershoots. This lines up with the per-airport pattern: BFS has the strongest trend (worst penalty), BHD's is milder (smaller penalty, so the model's other features still add value over the baselines), and LDY has next to no trend or seasonality — there the model's extra complexity is mostly overfitting to noise rather than hitting an extrapolation ceiling.
+
+## Results: v2 (year-over-year growth ratio as the target)
+
+Fix: instead of training the model to predict the raw passenger count, train it to predict growth relative to the same calendar month last year — `(actual - same_month_last_year) / same_month_last_year` — then reconstruct the forecast as `same_month_last_year × (1 + predicted_growth)`. A growth ratio stays in a roughly stable range even while the underlying level keeps climbing (unlike the raw count), so the tree no longer needs to extrapolate past its training range to produce a new all-time high — it just needs "stronger or weaker than a year ago," which it can express regardless of what absolute levels it saw in training.
+
+_Results to be added once the updated `xgb_forecast` has been re-run through the evaluation harness._
