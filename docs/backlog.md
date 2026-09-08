@@ -36,7 +36,7 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 
 ## Epic 5: Write-up & Dashboard
 
-- [ ] Write the README: methodology, findings, model comparison, in plain language
+- [x] Write the README: methodology, findings, model comparison, in plain language — top-level `README.md` rewritten: key findings, methodology, results table, links into `docs/` for full detail, run instructions
 - [ ] Produce final forecast outputs and charts per airport
 - [ ] (Optional) Build a Streamlit dashboard over the historical + forecast data
 
