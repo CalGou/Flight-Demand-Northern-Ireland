@@ -1,5 +1,7 @@
 # Flight Demand Northern Ireland
 
+**[Live dashboard →](https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/)**
+
 Forecasting monthly passenger demand at Northern Ireland's three commercial airports — Belfast International (BFS), George Best Belfast City (BHD), and City of Derry (LDY) — using official UK CAA airport statistics. A self-directed portfolio project covering the full pipeline: data sourcing, cleaning, exploratory analysis, and time-series/ML forecasting, evaluated with walk-forward cross-validation rather than a single train/test split.
 
 ## Key findings
@@ -72,7 +74,7 @@ streamlit run app.py
 
 ## Dashboard
 
-`app.py` is a Streamlit dashboard over the historical panel and the ETS forecast — per-airport KPIs, an interactive actual-vs-forecast chart, and the model evaluation table above. Run it locally with `streamlit run app.py`, or see it live at [link once deployed].
+`app.py` is a Streamlit dashboard over the historical panel and the ETS forecast — per-airport KPIs, an interactive actual-vs-forecast chart, and the model evaluation table above. Run it locally with `streamlit run app.py`, or see it live at **[flight-demand-northern-ireland.streamlit.app](https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/)**.
 
 ## Licence
 
