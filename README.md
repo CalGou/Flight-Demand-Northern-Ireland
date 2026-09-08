@@ -62,8 +62,22 @@ python src/features.py
 
 # 5. Run the full model comparison
 python src/evaluation.py
+
+# 6. Produce the final 12-month-ahead forecast + charts per airport
+python src/forecast.py
+
+# 7. (Optional) Launch the interactive dashboard
+streamlit run app.py
 ```
+
+## Dashboard
+
+`app.py` is a Streamlit dashboard over the historical panel and the ETS forecast — per-airport KPIs, an interactive actual-vs-forecast chart, and the model evaluation table above. Run it locally with `streamlit run app.py`, or see it live at [link once deployed].
+
+## Licence
+
+Code is MIT-licensed (see `LICENSE`). The underlying data is UK CAA's "UK Airport Data," published under the [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/) — free to use and republish with attribution, not covered by the MIT licence above.
 
 ## Status
 
-Epics 1–4 complete (data audit, cleaning & EDA, baseline & statistical models, ML models) — see `docs/backlog.md` for the full ticket-level history. Remaining: final forecast outputs/charts, an optional Streamlit dashboard, and portfolio polish (licence, pinned dependencies).
+Epics 1–5 complete (data audit, cleaning & EDA, baseline & statistical models, ML models, write-up & dashboard) — see `docs/backlog.md` for the full ticket-level history. Remaining: Epic 6, portfolio polish.
