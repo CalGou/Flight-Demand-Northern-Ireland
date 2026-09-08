@@ -13,9 +13,9 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 ## Epic 2: Cleaning & EDA
 
 - [x] Build ingestion script: raw CAA files → tidy monthly panel (airport × month) — `ingest_caa_data.py` + `build_panel.py`. Fully clean as of 26 Aug 2026: 414 rows, 138 months × 3 airports, zero missing passenger/movement data, zero malformed periods (see `docs/data-audit-findings.md` for the two schema bugs that were fixed along the way)
-- [ ] Normalise the movement columns' casing across the Apr-2016 CAA schema change (e.g. `mov_total_EU_atm` / `mov_Total_EU_ATM` are the same metric)
-- [ ] Handle missing/suppressed values, with the treatment documented
-- [ ] Flag the COVID-era anomaly period as an explicit feature/exclusion flag
+- [x] Normalise the movement columns' casing across the Apr-2016 CAA schema change — `clean_panel.py`, merges `mov_total_EU_atm`/`mov_Total_EU_ATM` and the equivalent scheduled-ATM pair, asserts no overlap before merging
+- [x] Handle missing/suppressed values — checked systematically: no negative values, no suppression markers anywhere in the panel; the only NaNs were the two casing-duplicate columns above (now merged). BFS Apr/May 2020 showing 0 total_pax is genuine (first COVID lockdown), not a data gap
+- [x] Flag the COVID-era anomaly period as an explicit feature/exclusion flag — `covid_anomaly` boolean column, Mar 2020–May 2022 inclusive, window set from evidence (BFS doesn't return to the 2015–2019 monthly baseline of ~464k until Jun 2022)
 - [ ] EDA: seasonality, trend, and airport-to-airport comparison
 - [ ] EDA: pre/post-COVID recovery pattern
 - [ ] (If pursued) Source and merge supplementary features — economic, tourism, or weather data
