@@ -78,6 +78,7 @@ if __name__ == "__main__":
     def naive_forecast(train_df, test_periods):
         last_value = train_df["total_pax"].iloc[-1]
         return [last_value] * len(test_periods)
+
     def seasonal_naive_forecast(train_df, test_periods):
         lookup = train_df.set_index("period")["total_pax"]
         predictions = []
@@ -86,20 +87,22 @@ if __name__ == "__main__":
             lookback_period = f"{year - 1}{month}"
             predictions.append(lookup.get(lookback_period, train_df["total_pax"].iloc[-1]))
         return predictions
+
     df = pd.read_csv("../data/processed/monthly_panel_clean.csv", dtype={"period": str})
     periods = sorted(df["period"].unique())
+    covid_folds = {"201912", "202006", "202012", "202106", "202112"}
 
     for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast)]:
         scores = evaluate_forecaster(df, fn, make_folds(periods), ["BFS", "BHD", "LDY"])
         print(f"\n{name}:")
         print(scores.groupby("airport_code")[["mae", "rmse", "mape"]].mean().to_string())
-        scores_sn = evaluate_forecaster(df, seasonal_naive_forecast, make_folds(periods), ["BFS", "BHD", "LDY"])
-        print(scores_sn.sort_values("mape", ascending=False).head(10).to_string())
 
-        covid_folds = {"201912", "202006", "202012", "202106", "202112"}
+    print("\nseasonal_naive worst 10 folds by MAPE:")
+    scores_sn = evaluate_forecaster(df, seasonal_naive_forecast, make_folds(periods), ["BFS", "BHD", "LDY"])
+    print(scores_sn.sort_values("mape", ascending=False).head(10).to_string())
 
-for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast)]:
-    scores = evaluate_forecaster(df, fn, make_folds(periods), ["BFS", "BHD", "LDY"])
-    clean = scores[~scores["train_end"].isin(covid_folds)]
-    print(f"\n{name} (excluding COVID-overlapping folds):")
-    print(clean.groupby("airport_code")[["mae", "rmse", "mape"]].mean().to_string())
+    for name, fn in [("naive", naive_forecast), ("seasonal_naive", seasonal_naive_forecast)]:
+        scores = evaluate_forecaster(df, fn, make_folds(periods), ["BFS", "BHD", "LDY"])
+        clean = scores[~scores["train_end"].isin(covid_folds)]
+        print(f"\n{name} (excluding COVID-overlapping folds):")
+        print(clean.groupby("airport_code")[["mae", "rmse", "mape"]].mean().to_string())
