@@ -2,6 +2,8 @@
 
 **[Live dashboard →](https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/)**
 
+[![tests](https://github.com/CalGou/Flight-Demand-Northern-Ireland/actions/workflows/tests.yml/badge.svg)](https://github.com/CalGou/Flight-Demand-Northern-Ireland/actions/workflows/tests.yml)
+
 Forecasting monthly passenger demand at Northern Ireland's three commercial airports — Belfast International (BFS), George Best Belfast City (BHD), and City of Derry (LDY) — using official UK CAA airport statistics. A self-directed portfolio project covering the full pipeline: data sourcing, cleaning, exploratory analysis, and time-series/ML forecasting, evaluated with walk-forward cross-validation rather than a single train/test split.
 
 ## Key findings
@@ -42,6 +44,7 @@ Full write-ups, including the COVID-era full-data comparison, per-fold breakdown
 - `data/processed/` — cleaned, tidy monthly panel and the feature-engineered version
 - `notebooks/` — exploratory analysis
 - `src/` — ingestion, cleaning, feature engineering, and evaluation code
+- `tests/` — pytest unit tests for the parsing, cleaning, feature and evaluation code, run on every push by GitHub Actions
 - `docs/` — project parameters, backlog, and the findings documents above
 
 ## Running it
@@ -71,6 +74,15 @@ python src/forecast.py
 # 7. (Optional) Launch the interactive dashboard
 streamlit run app.py
 ```
+
+### Tests
+
+```
+pip install pytest
+pytest
+```
+
+The tests use small synthetic fixtures (including the three CAA CSV schema variants found during the data audit), so they run offline in a couple of seconds. They cover the regressions that actually happened or would silently corrupt results: CAA's airport-name column rename, malformed source periods, the movement-column casing merge, the COVID window boundaries, look-ahead leakage in lag/rolling features and walk-forward folds, and the error metrics.
 
 ## Dashboard
 
