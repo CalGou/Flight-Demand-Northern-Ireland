@@ -45,3 +45,17 @@ Derived from the project parameters doc's phased timeline (§9). Organised as ep
 - [x] Clean up the repo for public visibility (licence, pinned dependencies, clear run instructions) — MIT `LICENSE` added (data separately noted as UK CAA OGL, not MIT); `requirements.txt` pinned to tested versions and trimmed of two unused packages (scikit-learn, openpyxl -- never actually imported); README run instructions cover the full pipeline through the dashboard. Also fixed a broken reference found during proofread: the EDA notebook was saved as `01_ada.ipynb` (typo) while every doc pointed at `01_eda.ipynb` -- renamed to match. Live dashboard deployed and linked: https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/
 - [ ] Final proofread of the write-up
 - [ ] Link the finished project from CV / portfolio site
+
+## Epic 7: NI Airports Explorer (full-stack version)
+
+Project 1 of the portfolio plan: a React + FastAPI + PostgreSQL application over this project's outputs, deployed to AWS with Terraform. Lives in `explorer/`; see `explorer/README.md`.
+
+- [x] PostgreSQL schema with designed keys, check constraints and indexes, as an Alembic migration — `explorer/api/migrations/`, reasoning in `explorer/docs/schema.md`. Caught and removed a redundant index during review (a unique constraint already provided it)
+- [x] Idempotent loader from the pipeline's CSV outputs into Postgres — `explorer/api/app/loader.py`; forecasts versioned by run so future refreshes keep history
+- [x] FastAPI REST API: airports, monthly, annual, forecast, network and evaluation endpoints with OpenAPI docs — `explorer/api/app/`
+- [x] pytest suite against real Postgres (49 tests): endpoints and error cases, constraints, loader idempotency, migration round trip, model/migration drift, index usage
+- [x] Dockerfile, docker-compose (db + migrate/load + API), GitHub Actions workflow with a Postgres service container — `.github/workflows/explorer-api.yml`
+- [ ] React + TypeScript front end with Material UI (airport overview, history/forecast chart, network comparison, model evaluation)
+- [ ] Front-end tests with Jest and React Testing Library
+- [ ] Terraform: S3 + CloudFront (front end), Lambda + API Gateway (API), RDS (Postgres)
+- [ ] Deploy pipeline in GitHub Actions; link the live site from the README

@@ -88,6 +88,10 @@ The tests use small synthetic fixtures (including the three CAA CSV schema varia
 
 `app.py` is a Streamlit dashboard over the historical panel and the ETS forecast — per-airport KPIs, an interactive actual-vs-forecast chart, and the model evaluation table above. Run it locally with `streamlit run app.py`, or see it live at **[flight-demand-northern-ireland.streamlit.app](https://flight-demand-northern-ireland-tv8ptiozfgpj9mtqtnjspz.streamlit.app/)**.
 
+## NI Airports Explorer (full-stack version)
+
+`explorer/` contains a full-stack application over this project's outputs: a PostgreSQL database with designed indexes, a FastAPI REST API with a pytest suite run against real Postgres, Docker, and CI. A React + TypeScript front end and AWS deployment (Terraform) are in progress. See [`explorer/README.md`](explorer/README.md).
+
 ## Licence
 
 Code is MIT-licensed (see `LICENSE`). The underlying data is UK CAA's "UK Airport Data," published under the [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/) — free to use and republish with attribution, not covered by the MIT licence above.
