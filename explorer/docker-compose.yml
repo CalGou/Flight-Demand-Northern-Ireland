@@ -1,0 +1,50 @@
+# Local stack for the NI Airports Explorer.
+#
+#   docker compose up --build     # Postgres + migrations + data load + API on :8000
+#   docker compose up db          # just Postgres, for running the pytest suite locally
+#
+# Credentials here are for local development only.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: explorer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d explorer"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # One-shot job: apply migrations, then load the pipeline's outputs.
+  loader:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/explorer
+    volumes:
+      - ../data/processed:/repo/data/processed:ro
+      - ../reports:/repo/reports:ro
+    command: sh -c "alembic upgrade head && python -m app.loader --repo-root /repo"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/explorer
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      loader:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
